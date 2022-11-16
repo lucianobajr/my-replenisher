@@ -6,4 +6,5 @@
 
 ## Aplicação
 
-![01-intro](https://user-images.githubusercontent.com/45442173/202305157-6ca007e6-e609-461c-87ba-b5e6027776b2.png)
+![01-intro (1)](https://user-images.githubusercontent.com/45442173/202305389-16fdfafa-19b2-4a92-84ce-a70a74e3274a.png)
+
