@@ -10,5 +10,9 @@
   "scripts": {
     "start": "wrangler dev",
     "deploy": "wrangler publish"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.16.1",
+    "worktop": "^0.7.3"
   }
 }
