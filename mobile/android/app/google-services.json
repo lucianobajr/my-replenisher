@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "622220978106",
+    "project_id": "my-replenisher",
+    "storage_bucket": "my-replenisher.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:622220978106:android:e82543cf3ee5f1c6ed5f83",
+        "android_client_info": {
+          "package_name": "com.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "622220978106-fgikf347rb5hmqtudr2mrajucb6lhdoe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSmgI53wl8Lst2xmOtb011So5TyfjQI3k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "622220978106-fgikf347rb5hmqtudr2mrajucb6lhdoe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
