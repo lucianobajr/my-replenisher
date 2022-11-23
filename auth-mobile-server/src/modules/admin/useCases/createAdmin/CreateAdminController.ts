@@ -4,11 +4,11 @@ import { CreateAdminUseCase } from "./CreateAdminUseCase";
 
 class CreateAdminController {
   async handle(request: Request, response: Response): Promise<Response> {
-    const { secret, name, email, password } = request.body;
+    const { name, email, password } = request.body;
 
     const createAdminUseCase = container.resolve(CreateAdminUseCase);
 
-    await createAdminUseCase.execute(secret, {
+    await createAdminUseCase.execute({
       name,
       email,
       password,

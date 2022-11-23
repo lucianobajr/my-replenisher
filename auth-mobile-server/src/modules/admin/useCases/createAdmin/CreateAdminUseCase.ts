@@ -13,13 +13,8 @@ class CreateAdminUseCase {
   ) {}
 
   async execute(
-    secret: string,
     { name, email, password }: ICreateUserDTO
   ): Promise<void> {
-    if (secret !== process.env.PASSWORD_ADMIN_REGISTER) {
-      throw new AppError("Secret is wrong!");
-    }
-
     const adminAlreadyExists = await this.adminsRepository.findByEmail(email);
 
     if (adminAlreadyExists) {
