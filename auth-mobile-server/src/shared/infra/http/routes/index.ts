@@ -9,6 +9,6 @@ router.get("/", (request, response) => {
 });
 
 router.use("/admins", adminsRoutes);
-router.use("/session", authenticateRoutes);
+router.use("/auth", authenticateRoutes);
 
 export { router };
