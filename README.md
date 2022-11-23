@@ -16,6 +16,9 @@ A Railway é uma plataforma de implantação na qual você pode provisionar a in
 
 ### Edge Computing - Cloudflare Workers
 
+![edge_computing_diagram](https://user-images.githubusercontent.com/45442173/203537808-1dfc6f83-c5ca-4be8-a57e-bf12e1bf6dc9.png)
+
+
 A edge computing, ou computação de borda, é aquela na qual o processamento acontece no local físico (ou próximo) do usuário ou da fonte de dados. Com o processamento mais próximo, os usuários se beneficiam de serviços mais rápidos e confiáveis, enquanto as empresas usufruem da flexibilidade da cloud computing híbrida. A edge computing é uma das formas como uma empresa pode usar e distribuir um pool de recursos por um grande número de locais.
 
 #### Multi-Region Deploy

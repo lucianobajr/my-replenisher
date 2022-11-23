@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { adminsRoutes } from "./admins.routes";
+import { authenticateRoutes } from "./authenticate.routes";
 
 const router = Router();
 
@@ -8,5 +9,6 @@ router.get("/", (request, response) => {
 });
 
 router.use("/admins", adminsRoutes);
+router.use("/session", authenticateRoutes);
 
 export { router };
