@@ -19,11 +19,6 @@ routes.add("GET", "/get", async (req, res) => {
   return res.send(200, { my_replenisher });
 });
 
-routes.add("POST", "/change", async (req, res) => {
-  const my_replenisher = await redis.incr("my_replenisher");
-  return res.send(201, { my_replenisher });
-});
-
 routes.add("PUT", "/change-value", async (req, res) => {
   const body = await req.body.json();
 
