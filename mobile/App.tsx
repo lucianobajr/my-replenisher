@@ -1,47 +1,45 @@
-import "react-native-gesture-handler";
+import React from "react";
 
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { StatusBar } from "react-native";
+import { useFonts } from "@expo-google-fonts/roboto-slab";
 
-import { worker } from "./src/services/worker";
+import {
+  RobotoSlab_100Thin,
+  RobotoSlab_200ExtraLight,
+  RobotoSlab_300Light,
+  RobotoSlab_400Regular,
+  RobotoSlab_500Medium,
+  RobotoSlab_700Bold,
+  RobotoSlab_900Black,
+} from "@expo-google-fonts/roboto-slab";
 
-interface IRequest {
-  my_replenisher: number;
-}
+import { NavigationContainer } from "@react-navigation/native";
+import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
+
+import Routes from "./src/routes";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function App() {
-  const [value, setValue] = useState(0);
+  const [fontsLoaded] = useFonts({
+    RobotoSlab_100Thin,
+    RobotoSlab_200ExtraLight,
+    RobotoSlab_300Light,
+    RobotoSlab_400Regular,
+    RobotoSlab_500Medium,
+    RobotoSlab_700Bold,
+    RobotoSlab_900Black,
+  });
 
-  useEffect(() => {
-    async function fetchValue() {
-      const { data } = await worker.get<IRequest>("/get");
-
-      setValue(data.my_replenisher);
-    }
-
-    fetchValue();
-  }, []);
+  if (!fontsLoaded) {
+    SplashScreen.hideAsync();
+  }
 
   return (
-    <>
-      <StatusBar
-        barStyle="light-content"
-        translucent
-        backgroundColor={'#FFF'}
-      />
-      <View style={styles.container}>
-        <Text>CURRENT VALUE {value}</Text>
-      </View>
-    </>
+    <NavigationContainer>
+      <StatusBar translucent backgroundColor="transparent" style="dark" />
+
+      <Routes />
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});

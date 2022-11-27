@@ -1,5 +1,10 @@
-/*
-import React, { createContext, useState, useContext, useCallback } from "react";
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useCallback,
+  useEffect,
+} from "react";
 import { api } from "../services/api";
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -29,6 +34,7 @@ interface SignInCredentials {
 
 interface AuthContextData {
   user: User;
+  loading: boolean;
   signIn(credentials: SignInCredentials): Promise<void>;
   signOut(): void;
 }
@@ -40,47 +46,59 @@ type Props = {
 };
 
 const AuthProvider: React.FC<Props> = ({ children }) => {
-  const [data, setData] = useState<AuthState>(() => {
-    const refreshToken = localStorage.getItem("@MyReplenisher:refreshToken");
-    const token = localStorage.getItem("@MyReplenisher:token");
-    const user = localStorage.getItem("@MyReplenisher:user");
+  const [data, setData] = useState<AuthState>({} as AuthState);
+  const [loading, setLoading] = useState(true);
 
-    if (token && user) {
-      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  useEffect(() => {
+    async function loadStorageDate(): Promise<void> {
+      const [token, user, refreshToken] = await AsyncStorage.multiGet([
+        "@MyReplenisher:token",
+        "@MyReplenisher:user",
+        "@MyReplenisher:refreshToken",
+      ]);
 
-      return {
-        token,
-        user: JSON.parse(user),
-        refreshToken: JSON.parse(refreshToken!),
-      };
+      if (token[1] && user[1] && refreshToken[1]) {
+        api.defaults.headers.common["Authorization"] = `Bearer ${token[1]}`;
+
+        setData({
+          token: token[1],
+          user: JSON.parse(user[1]),
+          refreshToken: JSON.parse(refreshToken[1]),
+        });
+      }
+
+      setLoading(false);
     }
-
-    return {} as AuthState;
-  });
+    loadStorageDate();
+  }, []);
 
   const signIn = useCallback(async ({ email, password }: SignInCredentials) => {
     const response = await api.post("sessions", { email, password });
     const { refreshToken, token, user } = response.data;
 
-    localStorage.setItem("@MyReplenisher:token", token);
-    localStorage.setItem("@MyReplenisher:user", JSON.stringify(user));
-    localStorage.setItem("@MyReplenisher:refreshToken", JSON.stringify(refreshToken));
+    await AsyncStorage.multiSet([
+      ["@MyReplenisher:token", token],
+      ["@MyReplenisher:user", JSON.stringify(user)],
+      ["@MyReplenisher:refreshToken", JSON.stringify(refreshToken)],
+    ]);
 
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
     setData({ refreshToken, token, user });
   }, []);
 
-  const signOut = useCallback(() => {
-    localStorage.removeItem("@MyReplenisher:refreshToken");
-    localStorage.removeItem("@MyReplenisher:token");
-    localStorage.removeItem("@MyReplenisher:user");
+  const signOut = useCallback(async () => {
+    await AsyncStorage.multiRemove([
+      "@MyReplenisher:token",
+      "@MyReplenisher:user",
+      "@MyReplenisher:refreshToken",
+    ]);
 
     setData({} as AuthState);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user: data.user, signIn, signOut }}>
+    <AuthContext.Provider value={{ user: data.user, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
@@ -98,4 +116,3 @@ function useAuth(): AuthContextData {
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export { AuthProvider, useAuth };
-*/
