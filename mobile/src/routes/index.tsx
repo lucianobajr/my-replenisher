@@ -2,7 +2,7 @@ import React from "react";
 //import { useAuth } from "../contexts/AuthContext";
 //import { ActivityIndicator, View } from "react-native";
 //import AppRoutes from "./app.routes";
-import AuthRoutes from "./auth.routes";
+import AuthRoutes from "./app.routes";
 
 const routes: React.FC = () => {
   //const { user, loading } = useAuth();

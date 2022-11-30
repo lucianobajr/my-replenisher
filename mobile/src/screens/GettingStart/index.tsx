@@ -16,6 +16,8 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { AuthStackParamList } from "../../routes/auth.routes";
 import { useNavigation } from "@react-navigation/native";
 
+import { Feather } from "@expo/vector-icons"
+
 type authRoutesProps = StackNavigationProp<AuthStackParamList, "GettingStart">;
 
 const GettingStart: React.FC = () => {
@@ -29,7 +31,7 @@ const GettingStart: React.FC = () => {
         <Text>Não deixe os alimentos essencias em falta</Text>
         <SubText>vamos sempre te informar o que precisa comprar!</SubText>
         <Button onPress={()=>navigation.navigate("SignIn")}>
-          <TextButton>Próximo</TextButton>
+          <TextButton><Feather name="arrow-right" color={"#FFF"} size={32} /></TextButton>
         </Button>
       </Content>
     </Container>
