@@ -5,7 +5,10 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/* Constant variables ------------------------------------------------------- */
+/* Constant defines -------------------------------------------------------- */
+#define CONVERT_G_TO_MS2 9.80665f
+#define MAX_ACCEPTED_RANGE 2.0f
+
 #define EI_CAMERA_RAW_FRAME_BUFFER_COLS 160
 #define EI_CAMERA_RAW_FRAME_BUFFER_ROWS 120
 
@@ -20,24 +23,7 @@ String data;
 
 bool measure = true;
 
-
-
-/*
- ** NOTE: If you run into TFLite arena allocation issue.
- **
- ** This may be due to may dynamic memory fragmentation.
- ** Try defining "-DEI_CLASSIFIER_ALLOCATION_STATIC" in boards.local.txt (create
- ** if it doesn't exist) and copy this file to
- ** `<ARDUINO_CORE_INSTALL_PATH>/arduino/hardware/<mbed_core>/<core_version>/`.
- **
- ** See
- ** (https://support.arduino.cc/hc/en-us/articles/360012076960-Where-are-the-installed-cores-located-)
- ** to find where Arduino installs cores on your machine.
- **
- ** If the problem persists then there's not enough memory for this model and application.
- */
-
-/* Edge Impulse ------------------------------------------------------------- */
+/* Private variables ------------------------------------------------------- */
 class OV7675 : public OV767X
 {
 public:
@@ -123,11 +109,10 @@ int calculate_resize_dimensions(uint32_t out_width, uint32_t out_height, uint32_
 void resizeImage(int srcWidth, int srcHeight, uint8_t *srcImage, int dstWidth, int dstHeight, uint8_t *dstImage, int iBpp);
 void cropImage(int srcWidth, int srcHeight, uint8_t *srcImage, int startX, int startY, int dstWidth, int dstHeight, uint8_t *dstImage, int iBpp);
 
-/**
- * @brief      Arduino setup function
- */
 void setup()
 {
+    // put your setup code here, to run once:
+
     Serial.begin(9600);
 
     if (!BLE.begin())
@@ -151,7 +136,6 @@ void setup()
     BLE.advertise();
 
     data = "0";
-    Serial.println("Edge Impulse Inferencing Demo");
 
     // summary of inferencing settings (from model_metadata.h)
     ei_printf("Inferencing settings:\n");
@@ -160,22 +144,7 @@ void setup()
     ei_printf("\tNo. of classes: %d\n", sizeof(ei_classifier_inferencing_categories) / sizeof(ei_classifier_inferencing_categories[0]));
 }
 
-void on_off_event(BLEDevice central, BLECharacteristic characteristic)
-{
-    // central wrote new value to characteristic, update LED
-    Serial.print("Event: ");
-    if (characteristic.value())
-    {
-        measure = true;
-    }
-    else
-    {
-        measure = false;
-    }
-    Serial.println(measure);
-}
-
-void send_data(int pred_index)
+void turn_on_leds(int pred_index)
 {
     switch (pred_index)
     {
@@ -230,11 +199,6 @@ void send_data(int pred_index)
     }
 }
 
-/**
- * @brief      Get data and run inferencing
- *
- * @param[in]  debug  Get debug info if true
- */
 void loop()
 {
     // put your main code here, to run repeatedly:
@@ -246,130 +210,28 @@ void loop()
         {
             if (measure)
             {
-                bool stop_inferencing = false;
-
-                while (stop_inferencing == false)
-                {
-                    ei_printf("\nStarting inferencing in 2 seconds...\n");
-
-                    // instead of wait_ms, we'll wait on the signal, this allows threads to cancel us...
-                    if (ei_sleep(2000) != EI_IMPULSE_OK)
-                    {
-                        break;
-                    }
-
-                    ei_printf("Taking photo...\n");
-
-                    if (ei_camera_init() == false)
-                    {
-                        ei_printf("ERR: Failed to initialize image sensor\r\n");
-                        break;
-                    }
-
-                    // choose resize dimensions
-                    uint32_t resize_col_sz;
-                    uint32_t resize_row_sz;
-                    bool do_resize = false;
-                    int res = calculate_resize_dimensions(EI_CLASSIFIER_INPUT_WIDTH, EI_CLASSIFIER_INPUT_HEIGHT, &resize_col_sz, &resize_row_sz, &do_resize);
-                    if (res)
-                    {
-                        ei_printf("ERR: Failed to calculate resize dimensions (%d)\r\n", res);
-                        break;
-                    }
-
-                    void *snapshot_mem = NULL;
-                    uint8_t *snapshot_buf = NULL;
-                    snapshot_mem = ei_malloc(resize_col_sz * resize_row_sz * 2);
-                    if (snapshot_mem == NULL)
-                    {
-                        ei_printf("failed to create snapshot_mem\r\n");
-                        break;
-                    }
-                    snapshot_buf = (uint8_t *)DWORD_ALIGN_PTR((uintptr_t)snapshot_mem);
-
-                    if (ei_camera_capture(EI_CLASSIFIER_INPUT_WIDTH, EI_CLASSIFIER_INPUT_HEIGHT, snapshot_buf) == false)
-                    {
-                        ei_printf("Failed to capture image\r\n");
-                        if (snapshot_mem)
-                            ei_free(snapshot_mem);
-                        break;
-                    }
-
-                    ei::signal_t signal;
-                    signal.total_length = EI_CLASSIFIER_INPUT_WIDTH * EI_CLASSIFIER_INPUT_HEIGHT;
-                    signal.get_data = &ei_camera_cutout_get_data;
-
-                    // run the impulse: DSP, neural network and the Anomaly algorithm
-                    ei_impulse_result_t result = {0};
-
-                    EI_IMPULSE_ERROR ei_error = run_classifier(&signal, &result, debug_nn);
-                    if (ei_error != EI_IMPULSE_OK)
-                    {
-                        ei_printf("Failed to run impulse (%d)\n", ei_error);
-                        ei_free(snapshot_mem);
-                        break;
-                    }
-
-                    // print the predictions
-                    ei_printf("Predictions (DSP: %d ms., Classification: %d ms., Anomaly: %d ms.): \n",
-                              result.timing.dsp, result.timing.classification, result.timing.anomaly);
-#if EI_CLASSIFIER_OBJECT_DETECTION == 1
-                    bool bb_found = result.bounding_boxes[0].value > 0;
-                    for (size_t ix = 0; ix < result.bounding_boxes_count; ix++)
-                    {
-                        auto bb = result.bounding_boxes[ix];
-                        if (bb.value == 0)
-                        {
-                            continue;
-                        }
-
-                        ei_printf("    %s (%f) [ x: %u, y: %u, width: %u, height: %u ]\n", bb.label, bb.value, bb.x, bb.y, bb.width, bb.height);
-                    }
-
-                    if (!bb_found)
-                    {
-                        ei_printf("    No objects found\n");
-                    }
-#else
-
-                    int pred_index = 0;
-                    float pred_value = result.classification[0].value;
-
-                    for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++)
-                    {
-                        ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
-
-                        if (result.classification[ix].value > pred_value)
-                        {
-                            pred_index = ix;
-                            pred_value = result.classification[ix].value;
-                        }
-                    }
-
-                    Serial.println(pred_index);
-                    send_data(pred_index);
-                    ble_time.writeValue(data);
-
-#if EI_CLASSIFIER_HAS_ANOMALY == 1
-                    ei_printf("    anomaly score: %.3f\n", result.anomaly);
-#endif
-#endif
-                    while (ei_get_serial_available() > 0)
-                    {
-                        if (ei_get_serial_byte() == 'b')
-                        {
-                            ei_printf("Inferencing stopped by user\r\n");
-                            stop_inferencing = true;
-                        }
-                    }
-                    if (snapshot_mem)
-                        ei_free(snapshot_mem);
-                }
-                ei_camera_deinit();
+                int pred_index = 2;
+                turn_on_leds(pred_index);
+                ble_time.writeValue(data);
             }
         }
         Serial.println("Device disconnected");
     }
+}
+
+void on_off_event(BLEDevice central, BLECharacteristic characteristic)
+{
+    // central wrote new value to characteristic, update LED
+    Serial.print("Event: ");
+    if (characteristic.value())
+    {
+        measure = true;
+    }
+    else
+    {
+        measure = false;
+    }
+    Serial.println(measure);
 }
 
 /**

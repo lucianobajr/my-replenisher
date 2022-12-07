@@ -131,10 +131,33 @@ void receive(BLEDevice peripheral)
     {
       Serial.print("Motion Detection: ");
       response = (char *)timeCharacteristic.value();
+      set_motion(response[0] - '0');
       Serial.println(motion);
-      Firebase.setInt("/status", response[0] - '0');
+      Firebase.setString("/status", motion);
     }
   }
 
   Serial.println("Peripheral disconnected");
+}
+
+void set_motion(int option)
+{
+  switch (option)
+  {
+  case 0:
+    motion = "IDLE";
+    break;
+
+  case 1:
+    motion = "LIFT";
+    break;
+
+  case 2:
+    motion = "MARITIME";
+    break;
+
+  case 3:
+    motion = "TERRESTRIAL";
+    break;
+  }
 }

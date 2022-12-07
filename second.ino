@@ -5,11 +5,14 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-/* Constant variables ------------------------------------------------------- */
+/* Constant defines -------------------------------------------------------- */
+#define CONVERT_G_TO_MS2 9.80665f
+#define MAX_ACCEPTED_RANGE 2.0f
+
 #define EI_CAMERA_RAW_FRAME_BUFFER_COLS 160
 #define EI_CAMERA_RAW_FRAME_BUFFER_ROWS 120
 
-#define DWORD_ALIGN_PTR(a) ((a & 0x3) ? (((uintptr_t)a + 0x4) & ~(uintptr_t)0x3) : a)
+#define DWORD_ALIGN_PTR(a)   ((a & 0x3) ?(((uintptr_t)a + 0x4) & ~(uintptr_t)0x3) : a)
 
 BLEService bleService("180C");
 
@@ -20,24 +23,7 @@ String data;
 
 bool measure = true;
 
-
-
-/*
- ** NOTE: If you run into TFLite arena allocation issue.
- **
- ** This may be due to may dynamic memory fragmentation.
- ** Try defining "-DEI_CLASSIFIER_ALLOCATION_STATIC" in boards.local.txt (create
- ** if it doesn't exist) and copy this file to
- ** `<ARDUINO_CORE_INSTALL_PATH>/arduino/hardware/<mbed_core>/<core_version>/`.
- **
- ** See
- ** (https://support.arduino.cc/hc/en-us/articles/360012076960-Where-are-the-installed-cores-located-)
- ** to find where Arduino installs cores on your machine.
- **
- ** If the problem persists then there's not enough memory for this model and application.
- */
-
-/* Edge Impulse ------------------------------------------------------------- */
+/* Private variables ------------------------------------------------------- */
 class OV7675 : public OV767X
 {
 public:
@@ -123,11 +109,10 @@ int calculate_resize_dimensions(uint32_t out_width, uint32_t out_height, uint32_
 void resizeImage(int srcWidth, int srcHeight, uint8_t *srcImage, int dstWidth, int dstHeight, uint8_t *dstImage, int iBpp);
 void cropImage(int srcWidth, int srcHeight, uint8_t *srcImage, int startX, int startY, int dstWidth, int dstHeight, uint8_t *dstImage, int iBpp);
 
-/**
- * @brief      Arduino setup function
- */
 void setup()
 {
+    // put your setup code here, to run once:
+
     Serial.begin(9600);
 
     if (!BLE.begin())
@@ -151,7 +136,6 @@ void setup()
     BLE.advertise();
 
     data = "0";
-    Serial.println("Edge Impulse Inferencing Demo");
 
     // summary of inferencing settings (from model_metadata.h)
     ei_printf("Inferencing settings:\n");
@@ -160,22 +144,7 @@ void setup()
     ei_printf("\tNo. of classes: %d\n", sizeof(ei_classifier_inferencing_categories) / sizeof(ei_classifier_inferencing_categories[0]));
 }
 
-void on_off_event(BLEDevice central, BLECharacteristic characteristic)
-{
-    // central wrote new value to characteristic, update LED
-    Serial.print("Event: ");
-    if (characteristic.value())
-    {
-        measure = true;
-    }
-    else
-    {
-        measure = false;
-    }
-    Serial.println(measure);
-}
-
-void send_data(int pred_index)
+void turn_on_leds(int pred_index)
 {
     switch (pred_index)
     {
@@ -230,11 +199,6 @@ void send_data(int pred_index)
     }
 }
 
-/**
- * @brief      Get data and run inferencing
- *
- * @param[in]  debug  Get debug info if true
- */
 void loop()
 {
     // put your main code here, to run repeatedly:
@@ -331,13 +295,13 @@ void loop()
                         ei_printf("    No objects found\n");
                     }
 #else
-
                     int pred_index = 0;
                     float pred_value = result.classification[0].value;
 
                     for (size_t ix = 0; ix < EI_CLASSIFIER_LABEL_COUNT; ix++)
                     {
-                        ei_printf("    %s: %.5f\n", result.classification[ix].label, result.classification[ix].value);
+                        ei_printf("    %s: %.5f\n", result.classification[ix].label,
+                                  result.classification[ix].value);
 
                         if (result.classification[ix].value > pred_value)
                         {
@@ -345,14 +309,14 @@ void loop()
                             pred_value = result.classification[ix].value;
                         }
                     }
-
-                    Serial.println(pred_index);
-                    send_data(pred_index);
-                    ble_time.writeValue(data);
+                    turn_on_leds(pred_index);
 
 #if EI_CLASSIFIER_HAS_ANOMALY == 1
                     ei_printf("    anomaly score: %.3f\n", result.anomaly);
 #endif
+
+                    ble_time.writeValue(data);
+
 #endif
                     while (ei_get_serial_available() > 0)
                     {
@@ -371,6 +335,22 @@ void loop()
         Serial.println("Device disconnected");
     }
 }
+
+void on_off_event(BLEDevice central, BLECharacteristic characteristic)
+{
+    // central wrote new value to characteristic, update LED
+    Serial.print("Event: ");
+    if (characteristic.value())
+    {
+        measure = true;
+    }
+    else
+    {
+        measure = false;
+    }
+    Serial.println(measure);
+}
+
 
 /**
  * @brief      Determine whether to resize and to which dimension
